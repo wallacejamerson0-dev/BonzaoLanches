@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="
+width=device-width,
+initial-scale=1.0,
+viewport-fit=cover">
+
+<title>Cardápio Digital</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#5406ee;
+    font-family:Arial, Helvetica, sans-serif;
+    touch-action:auto;
+}
+
+/* APP */
+
+.app-container{
+    width:100%;
+    height:100dvh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+}
+
+/* CARROSSEL */
+
+.carousel-wrapper{
+    width:100%;
+    height:100%;
+    max-width:500px;
+    overflow:hidden;
+    position:relative;
+    touch-action:auto;
+    cursor:grab;
+    background:#32047d;
+}
+
+.carousel-track{
+    display:flex;
+    width:100%;
+    height:100%;
+    transition:transform .35s ease;
+    will-change:transform;
+}
+
+.carousel-page{
+    min-width:100%;
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+    position:relative;
+}
+
+/* IMAGEM */
+
+.carousel-page img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    object-position:center;
+    user-select:none;
+    -webkit-user-drag:none;
+}
+
+/* INDICADORES */
+
+.page-dots{
+    position:absolute;
+    bottom:25px;
+    left:0;
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    z-index:20;
+}
+
+.dot{
+    width:10px;
+    height:10px;
+    border-radius:50px;
+    background:rgba(255,255,255,.35);
+    transition:.3s;
+}
+
+.dot.active{
+    width:28px;
+    background:white;
+}
+
+/* CELULAR */
+
+@media (max-width:768px){
+
+    .carousel-wrapper{
+        max-width:100%;
+    }
+
+    .page-dots{
+        bottom:20px;
+    }
+
+}
+
+/* PC */
+
+@media (min-width:769px){
+
+    body{
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background:#000;
+    }
+
+    .carousel-wrapper{
+        border-radius:20px;
+        overflow:hidden;
+        box-shadow:0 0 40px rgba(0,0,0,.6);
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <div class="carousel-wrapper" id="wrapper">
+
+        <div class="carousel-track" id="carouselTrack"></div>
+
+        <div class="page-dots" id="pageDots"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+/* SUAS IMAGENS */
+
+const images = [
+
+    "foto.jpeg",
+    "foto2.jpeg"
+
+];
+
+/* ELEMENTOS */
+
+const track = document.getElementById("carouselTrack");
+const dots = document.getElementById("pageDots");
+const wrapper = document.getElementById("wrapper");
+
+/* CONTROLE */
+
+let current = 0;
+
+function createCarousel(){
+
+    track.innerHTML = "";
+    dots.innerHTML = "";
+
+    images.forEach((img,index)=>{
+
+        const page = document.createElement("div");
+
+        page.className = "carousel-page";
+
+        page.innerHTML = `
+            <img src="${img}" draggable="false">
+        `;
+
+        track.appendChild(page);
+
+        const dot = document.createElement("div");
+
+        dot.className = "dot";
+
+        if(index === current){
+            dot.classList.add("active");
+        }
+
+        dots.appendChild(dot);
+
+    });
+
+}
+
+function updateCarousel(){
+
+    track.style.transition = "transform .35s ease";
+
+    track.style.transform =
+    `translateX(-${current * 100}%)`;
+
+    document
+    .querySelectorAll(".dot")
+    .forEach((dot,index)=>{
+
+        dot.classList.remove("active");
+
+        if(index === current){
+            dot.classList.add("active");
+        }
+
+    });
+
+}
+
+/* ARRASTAR */
+
+let isDragging = false;
+
+let startX = 0;
+
+let moveX = 0;
+
+let isZooming = false;
+
+/* TOUCH */
+
+wrapper.addEventListener("touchstart",(e)=>{
+
+    if(e.touches.length > 1){
+
+        isZooming = true;
+        return;
+
+    }
+
+    isZooming = false;
+
+    isDragging = true;
+
+    startX = e.touches[0].clientX;
+
+    track.style.transition = "none";
+
+},{passive:true});
+
+wrapper.addEventListener("touchmove",(e)=>{
+
+    if(isZooming) return;
+
+    if(!isDragging) return;
+
+    moveX = e.touches[0].clientX;
+
+    const diff = moveX - startX;
+
+    const translate =
+    (-current * wrapper.offsetWidth) + diff;
+
+    track.style.transform =
+    `translateX(${translate}px)`;
+
+},{passive:true});
+
+wrapper.addEventListener("touchend",()=>{
+
+    if(isZooming) return;
+
+    if(!isDragging) return;
+
+    isDragging = false;
+
+    const diff = moveX - startX;
+
+    if(diff < -60 &&
+    current < images.length - 1){
+
+        current++;
+
+    }
+
+    if(diff > 60 &&
+    current > 0){
+
+        current--;
+
+    }
+
+    updateCarousel();
+
+});
+
+/* MOUSE */
+
+wrapper.addEventListener("mousedown",(e)=>{
+
+    isDragging = true;
+
+    startX = e.clientX;
+
+    track.style.transition = "none";
+
+    wrapper.style.cursor = "grabbing";
+
+});
+
+window.addEventListener("mousemove",(e)=>{
+
+    if(!isDragging) return;
+
+    moveX = e.clientX;
+
+    const diff = moveX - startX;
+
+    const translate =
+    (-current * wrapper.offsetWidth) + diff;
+
+    track.style.transform =
+    `translateX(${translate}px)`;
+
+});
+
+window.addEventListener("mouseup",()=>{
+
+    if(!isDragging) return;
+
+    isDragging = false;
+
+    const diff = moveX - startX;
+
+    if(diff < -60 &&
+    current < images.length - 1){
+
+        current++;
+
+    }
+
+    if(diff > 60 &&
+    current > 0){
+
+        current--;
+
+    }
+
+    updateCarousel();
+
+    wrapper.style.cursor = "grab";
+
+});
+
+/* TECLADO */
+
+window.addEventListener("keydown",(e)=>{
+
+    if(e.key === "ArrowRight"){
+
+        if(current < images.length - 1){
+
+            current++;
+
+            updateCarousel();
+
+        }
+
+    }
+
+    if(e.key === "ArrowLeft"){
+
+        if(current > 0){
+
+            current--;
+
+            updateCarousel();
+
+        }
+
+    }
+
+});
+
+/* INICIAR */
+
+createCarousel();
+
+updateCarousel();
+
+</script>
+
+</body>
+</html>
